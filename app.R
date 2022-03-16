@@ -159,34 +159,16 @@ date_picker <- dccDatePickerRange(
   end_date_placeholder_text="Select a date!"
 )
 
-date_card <- dbcCard(
-  list(
-    dbcCardHeader("Date", class_name = "text-center"),
-    dbcCardBody(date_picker)))
-
 festival_picker <- dccDropdown(
     placeholder = "Select a festival",
     id = "dropdown_festival",
     value = "Les Deferlantes",
     options = list("Les Deferlantes"))
-      
-#unique(df_plot5$Category) %>%
-  #purrr::map(function(seg) list(label = seg, value = seg))
-
-festival_card <- dbcCard(
-  list(
-    dbcCardHeader("Name of Festival", class_name = "text-center"),
-    dbcCardBody(festival_picker)))
 
 playlist_picker <- dbcInput(
   placeholder = "Type the playlist's name...",
   id = "playlist_name",
   type = "text")
-
-playlist_card <- dbcCard(
-  list(
-    dbcCardHeader("Name of New Playlist", class_name = "text-center"),
-    dbcCardBody(playlist_picker)))
 
 number_songs <- dccDropdown(
   placeholder = "Select the number of songs",
@@ -194,18 +176,36 @@ number_songs <- dccDropdown(
   value = "Les Deferlantes",
   options = 1:10)
 
-songs_card <- dbcCard(
-  list(
-    dbcCardHeader("Number of Songs per Artist", class_name = "text-center"),
-    dbcCardBody(number_songs)))
-
-
 spotify_id <- div(
   list(
     dbcInput(placeholder = "Type your Spotify ID...", type = "text", id = "spotify_id"),
     dbcFormText("ex: 31qx2rwdeju4kpzqn6a3k")
   )
 )
+
+##########################
+######### Cards ##########
+##########################
+      
+date_card <- dbcCard(
+  list(
+    dbcCardHeader("Date", class_name = "text-center"),
+    dbcCardBody(date_picker)))
+
+festival_card <- dbcCard(
+  list(
+    dbcCardHeader("Name of Festival", class_name = "text-center"),
+    dbcCardBody(festival_picker)))
+
+playlist_card <- dbcCard(
+  list(
+    dbcCardHeader("Name of New Playlist", class_name = "text-center"),
+    dbcCardBody(playlist_picker)))
+
+songs_card <- dbcCard(
+  list(
+    dbcCardHeader("Number of Songs per Artist", class_name = "text-center"),
+    dbcCardBody(number_songs)))
 
 spotify_id_card <- dbcCard(
   list(
@@ -223,18 +223,37 @@ message_card <- dbcCard(
 )
 
 
-  
+all_cards <- dbcCardGroup(list(
+  date_card, festival_card, playlist_card, songs_card, spotify_id_card)
+)
+
+###### Button #######
+
+
+button <- div(
+  list(
+    dbcButton("Create",
+              id = "button", n_clicks = 0,
+              outline = TRUE, color = "info",
+              className = "me-1", size = "lg")
+    ),
+  className = "d-grid gap-2"
+)
+
+
+
+#######################
+###### Layout #########
+#######################
+
 app %>% set_layout(
   dbcContainer(
     list(
       dbcRow(
-        list(
-          dbcCol(date_card),
-          dbcCol(festival_card),
-          dbcCol(playlist_card),
-          dbcCol(spotify_id_card),
-          dbcCol(songs_card)
-        )
+        all_cards
+      ),
+      dbcRow(
+        dbcCol(button, width = 12)
       ),
       dbcRow(
         dbcCol(message_card)
@@ -242,34 +261,36 @@ app %>% set_layout(
     )
   )
 )
+  
 
 app$callback(
-  output('message_card', 'children'),
+  list(output('message_card', 'children')),
   list(
+    input('button', 'n_clicks'),
     state("date-picker-range", "start_date"),
     state("date-picker-range", "end_date"),
     state("playlist_name", "value"),
     state("dropdown_songs", "value"),
-    state("spotify_id", "value"),
-    input("button", 'n_clicks')),
-  prevent_initial_call = TRUE,
-  function(start_date,end_date, name, songs, id){
-    
-    dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
-    add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id)
-    
-    my_playlists <- get_my_playlists()$name
-    
-    if (name %in% my_playlists){
-      
-      message <- "Your playlist has successfully been created"
-      color <- 'green'
+    state("spotify_id", "value")),
+  function(n, start_date,end_date, name, songs, id){
+
+    if (n > 0){
+
+      dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
+      add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id)
+
+      my_playlists <- get_my_playlists()$name
+
+      if (name %in% my_playlists){
+        message <- "Your playlist has successfully been created"
+        color <- 'green'}
+      else {
+        message <- "An error occured, your playlist has not been created"
+        color <- 'red'}
+
+      message
+
     }
-    else {
-      message <- "An error occured, your playlist has not been created"
-      color <- 'red'
-    }
-    message
   }
 )
 app %>% run_app()
