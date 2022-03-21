@@ -85,8 +85,6 @@ tidy_data <- left_join(tidy_data, top_track_df, by = 'artist')
 
 tidy_data <- nest(tidy_data, song.info = c(song.id, song.name, song.popularity))
 
-
-
 top_n_songs <- function(n, data){
   #' Creates lists of songs to an existing spotify playlist
   #'
@@ -106,8 +104,6 @@ top_n_songs <- function(n, data){
   songs_to_add <- songs_to_add[!is.na(songs_to_add)]
   songs_to_add
 }
-
-
 
 add_songs_to_playlist <- function(dates_attending, number_songs_per_artist, name_playlist, spotify_id){
   
@@ -156,7 +152,8 @@ date_picker <- dccDatePickerRange(
   end_date = as.Date(max(tidy_data$date)),
   min_date_allowed = as.Date(min(tidy_data$date)),
   max_date_allowed = as.Date(max(tidy_data$date)),
-  end_date_placeholder_text="Select a date!"
+  end_date_placeholder_text="Select a date!",
+  minimum_nights = 0
 )
 
 festival_picker <- dccDropdown(
@@ -273,51 +270,81 @@ app$callback(
     state("dropdown_songs", "value"),
     state("spotify_id", "value")),
   function(n, start_date,end_date, name, songs, id){
-
+    
     if (n > 0){
-
+      
       dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
-      add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id)
-
+      try(add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id))
       my_playlists <- get_my_playlists()$name
-
+      
       if (name %in% my_playlists){
-        message <- "Your playlist has successfully been created"
-        color <- 'green'}
-      else {
+        message <- "Your playlist has successfully been created!"
+      }else{
         message <- "An error occured, your playlist has not been created"
-        color <- 'red'}
-
-      message
-
+      }
+      list(message)
     }
   }
 )
+
+
 app %>% run_app()
 
 
-# function(start_date,end_date, name, songs, id){
-# 
-#   dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
-#   add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id)
-# 
-#   my_playlists <- get_my_playlists()$name
-# 
-#   if (name %in% my_playlists){
-# 
-#     message <- "Your playlist has successfully been created"
-#     color <- 'green'
-#   }
-#   else {
-#     message <- "An error occured, your playlist has not been created"
-#     color <- 'red'
-#   }
-#   message
-# }
-# 
 
 
+my_playlists <- get_my_playlists()$name
+
+if (name %in% my_playlists){
+  message <- "Your playlist has successfully been created. Please verify your user ID."
+  color <- 'green'} else {
+    
+    color <- 'red'}
 
 
+function(n, start_date,end_date, name, songs, id){
+  
+  if (n > 0){
+    
+    dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
+    try(add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id))
+    my_playlists <- get_my_playlists()$name
+    
+    if (name %in% my_playlists){
+      message <- "Your playlist has successfully been created!"
+    }else{
+      message <- "An error occured, your playlist has not been created"
+    }
+    list(message)
+  }
+}
+)
 
-
+function(n, start_date,end_date, name, songs, id){
+  
+  if (n > 0){
+    tryCatch(
+      {
+        dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
+        add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id)
+      }
+      my_playlists <- get_my_playlists()$name
+      
+      if (name %in% my_playlists){
+        message <- "Your playlist has successfully been created!"
+      }else{
+        message <- "An error occured, your playlist has not been created"
+      }
+      list(message)
+      
+      
+      error = function(e){
+        message <- "An error occured, your playlist has not been created"
+        return(list(message))
+      }
+      
+      finally = list(message)
+    )
+  }
+}
+)
