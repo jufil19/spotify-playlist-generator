@@ -139,7 +139,6 @@ add_songs_to_playlist <- function(dates_attending, number_songs_per_artist, name
 
 user_id = '31qx2rwdeju4kpeiqh4zyzqn6a3u'
 
-# add_songs_to_playlist(dates_attending = '2022-07-08', number_songs_per_artist = 3, name_playlist = 'yeah buddy2', spotify_id = user_id)
 
 
 app <- Dash$new(external_stylesheets = dbcThemes$BOOTSTRAP)
@@ -213,7 +212,8 @@ message_card <- dbcCard(
   list(
     dbcCardBody(
       list(
-        h4(children = "", className = "text-center", id = "message_card")
+        h4(children = "", class_name = "text-center", id = "message_card"),
+        dbcCardLink(id = 'link')
       )
     )
   )
@@ -258,10 +258,13 @@ app %>% set_layout(
     )
   )
 )
-  
+
+
 
 app$callback(
-  list(output('message_card', 'children')),
+  list(output('message_card', 'children'),
+       output('link', 'children'),
+       output('link', 'href')),
   list(
     input('button', 'n_clicks'),
     state("date-picker-range", "start_date"),
@@ -279,10 +282,15 @@ app$callback(
       
       if (name %in% my_playlists){
         message <- "Your playlist has successfully been created!"
+        link_message <- "Click here to view it"
+        link <- paste0("https://open.spotify.com/playlist/", get_my_playlists()$id[1])
+        
       }else{
-        message <- "An error occured, your playlist has not been created"
+        message <- "An error occured, your playlist has not been created :("
+        link_message <- ""
+        link <- ""
       }
-      list(message)
+      list(message,link_message, link)
     }
   }
 )
@@ -293,58 +301,3 @@ app %>% run_app()
 
 
 
-my_playlists <- get_my_playlists()$name
-
-if (name %in% my_playlists){
-  message <- "Your playlist has successfully been created. Please verify your user ID."
-  color <- 'green'} else {
-    
-    color <- 'red'}
-
-
-function(n, start_date,end_date, name, songs, id){
-  
-  if (n > 0){
-    
-    dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
-    try(add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id))
-    my_playlists <- get_my_playlists()$name
-    
-    if (name %in% my_playlists){
-      message <- "Your playlist has successfully been created!"
-    }else{
-      message <- "An error occured, your playlist has not been created"
-    }
-    list(message)
-  }
-}
-)
-
-function(n, start_date,end_date, name, songs, id){
-  
-  if (n > 0){
-    tryCatch(
-      {
-        dates <- seq(as.Date(start_date), as.Date(end_date), by = "days")
-        add_songs_to_playlist(dates_attending = dates, number_songs_per_artist = songs, name_playlist = name, spotify_id = id)
-      }
-      my_playlists <- get_my_playlists()$name
-      
-      if (name %in% my_playlists){
-        message <- "Your playlist has successfully been created!"
-      }else{
-        message <- "An error occured, your playlist has not been created"
-      }
-      list(message)
-      
-      
-      error = function(e){
-        message <- "An error occured, your playlist has not been created"
-        return(list(message))
-      }
-      
-      finally = list(message)
-    )
-  }
-}
-)
